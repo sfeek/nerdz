@@ -11,11 +11,11 @@ def cmd_register
 	
 	# Sanitize parameters
 	if ARGV[1] == nil
-		puts "\nInvalid Syntax - nerdz server <username> <hostname> <port>"
+		puts "\nInvalid Syntax - nerdz register <username> <hostname> <port>"
 		return nil
 	end
 	if ARGV[2] == nil
-		puts "\nInvalid Syntax - nerdz server <username> <hostname> <port>"
+		puts "\nInvalid Syntax - nerdz register <username> <hostname> <port>"
 		return nil
 	end
 	if ARGV[3] == nil
@@ -74,12 +74,12 @@ def cmd_register
 			puts "\nUser Registration Failed!"
 			return nil
 		else
-			puts "\nUser Registration Corrupted!"
+			puts "\nCorrupted Packet Received!"
 			return nil
 		end
 	rescue Exception => msg
 		puts msg if $debug
-		puts "\nConnection to Nerdz Server Failed!"
+		puts "\nGeneral Registration Failure!"
 		return nil
 	ensure
 		s.close unless s == nil
@@ -110,8 +110,7 @@ def cmd_send
     end
 
     if ARGV[2] == nil
-        puts "\nInvalid Syntax - nerdz send <usernames_to> <username_from"
-        return nil
+        ARGV[2] = get_default
     end
 
     # Get usernames
@@ -185,7 +184,7 @@ def send_each(tusername,fusername,data,host,port)
             when "sent"
                 puts "\nMessage Sent to User #{tusername}"
             else
-                puts "\nSend to user #{tusername} Corrupted!"
+                puts "\nCorrupted Packet Received!"
             end
         end
     rescue Exception => msg 
@@ -275,7 +274,7 @@ def cmd_read_watch(mode,prv_key)
                 puts "\nUser #{fusername} Authentication Failed!"
                 return nil
             when "failed"
-                puts "\nUser #{fusername} Mailbox Read Failed!"
+                puts "\nUser #{fusername} Messagebox Read Failed!"
                 return nil
             else
                 puts "\nCorrupted Packet Received!"
@@ -284,7 +283,7 @@ def cmd_read_watch(mode,prv_key)
         end
     rescue Exception => msg 
         puts msg if $debug
-        puts "\nCorrupted Packet Received!"
+        puts "\nGeneral Read Failure!"
         return nil
     end
     return 0
@@ -377,18 +376,56 @@ def cmd_unregister
         end
     rescue Exception => msg 
         puts msg if $debug
-        puts "\nCorrupted Packet Received!"
+        puts "\nGeneral Unregister Failure!"
         return nil
     end
     return 0
 end
 
+# Get default user from file
+def get_default
+    # Read from default.user file
+    begin
+        file = File.open(File.expand_path("#{$path}/default.user"), "r")
+        user = file.gets.strip
+        return user
+    rescue Exception => msg 
+        puts msg if $debug
+        puts "\nNo Default User Set!"
+        return nil
+    ensure
+        file.close unless file == nil
+    end
+end
+
+# Set default user and write to file
+def cmd_default
+    # Sanitize parameters
+    if ARGV[1] == nil
+        puts "\nInvalid Syntax - nerdz default <username>"
+        return nil
+    end
+
+    # Write to the default.user file
+    begin
+        file = File.open(File.expand_path("#{$path}/default.user"), "w")
+        file.puts ARGV[1].strip
+        puts "\nDefault User Set to #{ARGV[1].strip}"
+        return 0
+    rescue Exception => msg 
+        puts msg if $debug
+        puts "\nDefault User File Missing!"
+        return nil
+    ensure
+        file.close unless file == nil
+    end
+end 
+
 # Watch the mailbox every 5 seconds
 def cmd_watch
     # Sanitize parameters
     if ARGV[1] == nil
-        puts "\nInvalid Syntax - nerdz watch <username>"
-        return nil
+        ARGV[1] = get_default
     end
 
     # Get the users private key
@@ -413,8 +450,7 @@ end
 def cmd_read
     # Sanitize parameters
     if ARGV[1] == nil
-        puts "\nInvalid Syntax - nerdz read <username>"
-        return nil
+        ARGV[1] = get_default
     end
 
     # Get the users private key
@@ -445,7 +481,7 @@ require_relative './public_encrypt'
 $path = File.expand_path('~/.nerdz')
 
 if ARGV[0] == nil
-	puts "\nAvailable Commands are Register, Unregister, Read, Send and Watch"
+	puts "\nAvailable Commands are Register, Unregister, Default, Read, Send and Watch"
 	exit 1
 end
 
@@ -465,8 +501,10 @@ begin
 		cmd_help
     when "unregister"
         cmd_unregister
+    when "default"
+        cmd_default
 	else
-		puts "\nAvailable Commands are Register, Unregister, Read, Send and Watch"
+		puts "\nAvailable Commands are Register, Unregister, Default, Read, Send and Watch"
 		exit 1
 	end
 rescue Exception => msg 
