@@ -109,6 +109,7 @@ def cmd_send
         return nil
     end
 
+    # If no username was specified, load from default file
     if ARGV[2] == nil
         ARGV[2] = get_default
     end
@@ -179,10 +180,10 @@ def send_each(tusername,fusername,data,host,port)
             # Interpret the results
             response = s.gets.strip
             case response 
-            when "failed"
-                puts "\nSend to user #{tusername} Failed!"
             when "sent"
                 puts "\nMessage Sent to User #{tusername}"
+            when "failed"
+                puts "\nSend to user #{tusername} Failed!"
             else
                 puts "\nCorrupted Packet Received!"
             end
