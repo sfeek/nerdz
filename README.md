@@ -8,14 +8,15 @@ Installation and brief usage instructions:
 	1. Install redis with defaults
 	2. Install redis ruby gem
 	3. Start redis
-	4. In another terminal start ./nerdz_server.rb
+	4. Install nerdz with ./installer.sh (You need to be root)
+	4. Then In another terminal  nerdz_server.rb
 	5. In another terminal: 
-		./nerdz.rb register <username> localhost
-		./nerdz.rb send <to_username> <from_username>
-		./nerdz.rb read <username>
-		./nerdz.rb watch <username>
-		./nerdz.rb unregister <username>
-		./nerdz.rb default <username>
+		nerdz register <username> <server_ip> <port> -Register User
+		nerdz send <to_username> <from_username>  -Send to another User
+		nerdz read <username>  -Read from a user message box
+		nerdz watch <username>  -Constantly watch a user messagebox
+		nerdz unregister <username>  -Unregister a user
+		nerdz default <username>   -Set Default Username
 
 
 
