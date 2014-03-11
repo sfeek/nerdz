@@ -9,7 +9,7 @@ Installation and brief usage instructions:
 	2. Install redis ruby gem
 	3. Start redis
 	4. Install nerdz with ./installer.sh (You need to be root)
-	4. Then In another terminal  nerdz_server.rb
+	4. Then In another terminal  nerdz_server
 	5. In another terminal: 
 		nerdz register <username> <server_ip> <port> -Register User
 		nerdz send <to_username> <from_username>  -Send to another User
