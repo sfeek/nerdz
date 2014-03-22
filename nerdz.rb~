@@ -479,7 +479,7 @@ require 'fileutils'
 require_relative './public_encrypt'
 
 #Global variable for path
-$path = File.expand_path('~/nerdz')
+$path = File.expand_path('~/.nerdz')
 
 if ARGV[0] == nil
 	puts "\nAvailable Commands are Register, Unregister, Default, Read, Send and Watch"
