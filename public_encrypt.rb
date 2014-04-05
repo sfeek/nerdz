@@ -110,7 +110,7 @@ def read_pub_key(username)
 		key = file.read
 	rescue Exception => msg
 		puts msg if $debug
-		puts "Public Key Read Failed!"
+		puts "Local Public Key Does Not Exist!"
 		return nil
 	ensure
   		file.close unless file == nil
@@ -131,6 +131,22 @@ def read_prv_key(username)
 		return nil
 	end
 	return prv_key
+end
+
+# Create key pair and store in files
+def write_pub_key(username,key)
+	begin
+        # Get the file paths
+		pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
+		
+        # Write to file
+        open pubkeyname, 'w' do |io| io.write key.public_key.to_pem end
+    rescue Exception => msg
+		puts msg if $debug
+		puts "Key Write Failed!"
+		return nil
+	end
+    return 0
 end
 
 # Create key pair and store in files

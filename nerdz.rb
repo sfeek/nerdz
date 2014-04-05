@@ -169,7 +169,28 @@ def send_each(tusername,fusername,data,host,port)
         else
             # Get public key from returned data
             pub_key = key_from_Base64(response)
-            
+
+            # Check to see if pub_key exists
+            if (pub_key_tmp = read_pub_key(tusername)) == nil
+                puts "Creating New Local Public Key File for #{tusername}"
+                write_pub_key(tusername,pub_key)
+            else
+                if (response != pub_key_tmp)
+                    puts "The Public Key for User #{tusername} does not match"
+                    puts "the Local Copy. Please verify Public Key change with"
+                    puts "#{tusername} to make sure they changed their Key."
+                    puts "\nUpdate Local Public Key and Continue Sending? <Y/N>"
+                    answer = $stdin.gets.strip.downcase
+                    if (answer == "y") or (answer == "yes")
+                        puts "Updating Local Public Key File for #{tusername}"
+                        write_pub_key(tusername,pub_key)
+                    else
+                        puts "Send to User #{tusername} Aborted!"
+                        return nil
+                    end
+                end
+            end
+                         
             # Encrypt the data with public key
             enc_data = encrypt_public(data,pub_key)
             
