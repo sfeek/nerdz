@@ -2,6 +2,7 @@
 
 $debug=false
 
+
 ##################
 #  nerdz client	 #	
 ##################
@@ -21,7 +22,7 @@ def cmd_register
 	if ARGV[3] == nil
 		ARGV[3] = '5150'
 	end
-	begin
+    begin
 		username = ARGV[1].strip.downcase
 		hostname = ARGV[2].strip
 		port = ARGV[3].to_i
@@ -105,7 +106,7 @@ end
 def cmd_send
     # Sanitize parameters
     if ARGV[1] == nil
-        puts "\nInvalid Syntax - nerdz send <usernames_to> <username_from"
+        puts "\nInvalid Syntax - nerdz send <usernames_to> <username_from>"
         return nil
     end
 
@@ -143,6 +144,67 @@ def cmd_send
 
     # Loop through each "To" user and send the data
     tusers.each do |tusername|
+        send_each(tusername,fusername,data,host,port)
+    end
+
+    return 0
+end    
+
+# Send file to one or more users
+def cmd_sendfile
+    # Sanitize parameters
+    if ARGV[1] == nil
+        puts "\nInvalid Syntax - nerdz filesend <filepath> <usernames_to> <username_from>"
+        return nil
+    end
+    if ARGV[2] == nil
+        puts "\nInvalid Syntax - nerdz filesend <filepath> <usernames_to> <username_from>"
+        return nil
+    end
+
+    # If no username was specified, load from default file
+    if ARGV[3] == nil
+        ARGV[3] = get_default
+    end
+
+    # Get usernames
+    tusers = ARGV[2].strip.downcase.split(",")
+    fusername = ARGV[3].strip.downcase
+
+    # Read the file and turn into base64
+    begin
+        # Check file size
+        if File.size(File.expand_path(ARGV[1])) > (10*1048576)
+            puts "File Greater than 10MB, Send Aborted!"
+            return nil
+        end
+        # Read and convert file for sending
+        file = File.open(File.expand_path(ARGV[1]), "rb") {|io| io.read}
+        fname = File.basename(File.expand_path(ARGV[1]))
+        data = "**** File [#{fname}] Downloaded From: #{fusername} - #{Time.now.asctime} ****\n|".concat(Base64.strict_encode64(file))
+    rescue Exception => msg 
+        puts msg if $debug
+        puts "\nError Reading File to be Sent!"
+        return nil
+    end
+
+    # Open config file to read host and port for user
+    begin
+        file = File.open(File.expand_path("#{$path}/#{fusername}_nerdz_server.conf"), "r")
+        host=file.gets.strip 
+        port=file.gets.strip.to_i
+    rescue Exception => msg 
+        puts msg if $debug
+        puts "\nError Reading Server Config File or #{fusername} not Registered!"
+        return nil
+    ensure
+        file.close unless file == nil
+    end
+
+    # Loop through each "To" user and send the data
+    puts "Sending file..."
+    tusers.each do |tusername|
+        puts "to #{tusername}"
         send_each(tusername,fusername,data,host,port)
     end
 
@@ -285,10 +347,10 @@ def cmd_read_watch(mode,prv_key)
                         puts
                     end
                 else
-                    # Decrypt and Send messages to STDOUT
+                    # Decrypt and Send messages to STDOUT or a File
                     messages.reverse.each do |msg|
                         puts
-                        puts decrypt_public(msg,prv_key)
+                        process_message(msg,prv_key)
                     end
                     puts
                 end
@@ -309,6 +371,33 @@ def cmd_read_watch(mode,prv_key)
         return nil
     end
     return 0
+end
+
+# Process incoming decrypted message or file
+def process_message (msg,prv_key)
+    # Decrypt the message or file
+    message = decrypt_public(msg,prv_key)
+    fyn = message.match /^\*\*\*\* File \[(.*)\]/
+
+    # Check if a message or a file
+    if fyn == nil
+        # A Message
+        puts message
+    else
+        # A file
+        begin
+            fdata = message.split("|")
+            puts fdata[0]
+            file = File.open(fyn[1],'wb')
+            file.syswrite(Base64.strict_decode64(fdata[1]))
+        rescue Exception => msg 
+            puts msg if $debug
+            puts "\nError Writing File  #{fyn[1]}!"
+            return nil
+        ensure
+            file.close unless file == nil
+        end
+    end
 end
 
 # Unregister User
@@ -486,7 +575,14 @@ def cmd_read
 end 
 
 def cmd_help
-	puts "Help Screen"
+	puts "**** Help Screen ****"
+    puts "\nnerdz register <username> <hostname> <port>"
+    puts "nerdz unregister <username>"
+    puts "nerdz default <username>"
+    puts "nerdz read <username>"
+    puts "nerdz send <usernames_to> <username_from>"
+    puts "nerdz sendfile <filepath> <usernames_to> <username_from>"
+    puts "nerdz watch <username>"
 end
 
 #####################
@@ -503,7 +599,7 @@ require_relative './public_encrypt'
 $path = File.expand_path('~/nerdz')
 
 if ARGV[0] == nil
-	puts "\nAvailable Commands are Register, Unregister, Default, Read, Send and Watch"
+	cmd_help
 	exit 1
 end
 
@@ -525,8 +621,10 @@ begin
         cmd_unregister
     when "default"
         cmd_default
+    when "sendfile"
+        cmd_sendfile
 	else
-		puts "\nAvailable Commands are Register, Unregister, Default, Read, Send and Watch"
+		cmd_help
 		exit 1
 	end
 rescue Exception => msg 
