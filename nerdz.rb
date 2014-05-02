@@ -204,7 +204,6 @@ def cmd_sendfile
     # Loop through each "To" user and send the data
     puts "Sending file..."
     tusers.each do |tusername|
-        puts "to #{tusername}"
         send_each(tusername,fusername,data,host,port)
     end
 
@@ -264,7 +263,7 @@ def send_each(tusername,fusername,data,host,port)
             response = s.gets.strip
             case response 
             when "sent"
-                puts "\nMessage Sent to User #{tusername}"
+                puts "\nSent to User #{tusername}"
             when "failed"
                 puts "\nSend to user #{tusername} Failed!"
             else
