@@ -18,8 +18,3 @@ Installation and brief usage instructions:
 		nerdz watch <username>  									-Constantly watch a user messagebox
 		nerdz unregister <username>  								-Unregister a user
 		nerdz default <username>   									-Set Default Username
-
-
-
-
-	

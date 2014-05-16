@@ -78,99 +78,99 @@ end
 
 # Hash data and return base64 encoded string
 def hash_data(data)
-	begin
-		sha256 = OpenSSL::Digest::SHA256.new
-		string = Base64.encode64(sha256.digest(data)).strip
-	rescue Exception => msg
-		puts msg if $debug
-		return nil
-	end
-	return string
+    begin
+        sha256 = OpenSSL::Digest::SHA256.new
+        string = Base64.encode64(sha256.digest(data)).strip
+    rescue Exception => msg
+        puts msg if $debug
+        return nil
+    end
+    return string
 end
 
 # Create RSA key from Base64 string
 def key_from_Base64(string)
-	begin
-		key = OpenSSL::PKey::RSA.new Base64.strict_decode64(string)
-	rescue Exception => msg
-		puts msg if $debug
-		puts "Key Decode Error"
-		return nil
-	end
-	
-	return key
+    begin
+        key = OpenSSL::PKey::RSA.new Base64.strict_decode64(string)
+    rescue Exception => msg
+        puts msg if $debug
+        puts "Key Decode Error"
+        return nil
+    end
+    
+    return key
 end
 
 # Read public key from pem file and return as Base64 string
 def read_pub_key(username)
-	begin 
-		pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
-		
-		file = File.open(pubkeyname, "rb")
-		key = file.read
-	rescue Exception => msg
-		puts msg if $debug
-		puts "Local Public Key Does Not Exist!"
-		return nil
-	ensure
-  		file.close unless file == nil
-	end	
-	
-	return Base64.strict_encode64(key)
+    begin 
+        pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
+        
+        file = File.open(pubkeyname, "rb")
+        key = file.read
+    rescue Exception => msg
+        puts msg if $debug
+        puts "Local Public Key Does Not Exist!"
+        return nil
+    ensure
+        file.close unless file == nil
+    end 
+    
+    return Base64.strict_encode64(key)
 end
 
 # Read private key from pem file and return as usable key
 def read_prv_key(username)
-	begin 
-		prvkeyname = File.expand_path("#{$path}/#{username}_priv_key.pem")
-		
-		prv_key=OpenSSL::PKey::RSA.new File.read prvkeyname
-	rescue Exception => msg
-		puts msg if $debug
-		puts "Private Key Read Failed!"
-		return nil
-	end
-	return prv_key
+    begin 
+        prvkeyname = File.expand_path("#{$path}/#{username}_priv_key.pem")
+        
+        prv_key=OpenSSL::PKey::RSA.new File.read prvkeyname
+    rescue Exception => msg
+        puts msg if $debug
+        puts "Private Key Read Failed!"
+        return nil
+    end
+    return prv_key
 end
 
 # Create key pair and store in files
 def write_pub_key(username,key)
-	begin
+    begin
         # Get the file paths
-		pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
-		
+        pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
+        
         # Write to file
         open pubkeyname, 'w' do |io| io.write key.public_key.to_pem end
     rescue Exception => msg
-		puts msg if $debug
-		puts "Key Write Failed!"
-		return nil
-	end
+        puts msg if $debug
+        puts "Key Write Failed!"
+        return nil
+    end
     return 0
 end
 
 # Create key pair and store in files
 def make_keys(username)
-	begin
+    begin
         # New key
-		key = OpenSSL::PKey::RSA.new 2048
+        key = OpenSSL::PKey::RSA.new 2048
 
         # Get the file paths
-		pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
-		prvkeyname = File.expand_path("#{$path}/#{username}_priv_key.pem")
+        pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
+        prvkeyname = File.expand_path("#{$path}/#{username}_priv_key.pem")
 
         # Encrypt private key and save both keys to disk
-		open pubkeyname, 'w' do |io| io.write key.public_key.to_pem end
-		cipher = OpenSSL::Cipher.new 'AES-128-CBC'
-		key_secure = key.export cipher
-		open prvkeyname, 'w' do |io|
-	  		io.write key_secure
-		end
-	rescue Exception => msg
-		puts msg if $debug
-		puts "Key Pair Create Failed!"
-		return nil
-	end
+        open pubkeyname, 'w' do |io| io.write key.public_key.to_pem end
+        cipher = OpenSSL::Cipher.new 'AES-128-CBC'
+        key_secure = key.export cipher
+        open prvkeyname, 'w' do |io|
+            io.write key_secure
+        end
+    rescue Exception => msg
+        puts msg if $debug
+        puts "Key Pair Create Failed!"
+        return nil
+    end
     return 0
 end
 
@@ -179,7 +179,7 @@ def encrypt_RSA_public(string,key)
     begin
         encrypted_string = Base64.strict_encode64(key.public_encrypt(string))
     rescue Exception => msg
-		puts msg if $debug
+        puts msg if $debug
         return nil
     end
     return encrypted_string
@@ -190,7 +190,7 @@ def decrypt_RSA_public(string,key)
     begin
         decrypted_string = (key.private_decrypt(Base64.strict_decode64(string)))
     rescue Exception => msg
-		puts msg if $debug
+        puts msg if $debug
         return nil
     end
     return decrypted_string
@@ -201,7 +201,7 @@ def generate_random_key(size)
     begin
         string=Base64.strict_encode64(OpenSSL::Random.random_bytes(size))
     rescue Exception => msg
-		puts msg if $debug
+        puts msg if $debug
         return nil
     end
     return string   

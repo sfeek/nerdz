@@ -4,102 +4,102 @@ $debug=false
 
 
 ##################
-#  nerdz client	 #	
+#  nerdz client  #  
 ##################
 
 # Register / Create New Config File
 def cmd_register
-	
-	# Sanitize parameters
-	if ARGV[1] == nil
-		puts "\nInvalid Syntax - nerdz register <username> <hostname> <port>"
-		return nil
-	end
-	if ARGV[2] == nil
-		puts "\nInvalid Syntax - nerdz register <username> <hostname> <port>"
-		return nil
-	end
-	if ARGV[3] == nil
-		ARGV[3] = '5150'
-	end
+    
+    # Sanitize parameters
+    if ARGV[1] == nil
+        puts "\nInvalid Syntax - nerdz register <username> <hostname> <port>"
+        return nil
+    end
+    if ARGV[2] == nil
+        puts "\nInvalid Syntax - nerdz register <username> <hostname> <port>"
+        return nil
+    end
+    if ARGV[3] == nil
+        ARGV[3] = '5150'
+    end
     begin
-		username = ARGV[1].strip.downcase
-		hostname = ARGV[2].strip
-		port = ARGV[3].to_i
-	rescue Exception => msg
-		puts msg if $debug
-		puts "\nBad Command Line Parameter!"
-		return nil
-	end
+        username = ARGV[1].strip.downcase
+        hostname = ARGV[2].strip
+        port = ARGV[3].to_i
+    rescue Exception => msg
+        puts msg if $debug
+        puts "\nBad Command Line Parameter!"
+        return nil
+    end
 
-	# Make sure .nerdz directory exists or create if it doesn't
-	begin
-		if File.directory?($path) == false
-			FileUtils.mkdir_p($path)
-		end
-	rescue Exception => msg
-		puts msg if $debug
-		puts "\nCannot Create .nerdz Directory!"
-		return nil
-	end
+    # Make sure .nerdz directory exists or create if it doesn't
+    begin
+        if File.directory?($path) == false
+            FileUtils.mkdir_p($path)
+        end
+    rescue Exception => msg
+        puts msg if $debug
+        puts "\nCannot Create .nerdz Directory!"
+        return nil
+    end
 
-	# Create keys, open server, register user and upload public key
-	begin
+    # Create keys, open server, register user and upload public key
+    begin
         # Quick test to make sure that we are not already locally registered
         if File.file?(File.expand_path("#{$path}/#{username}_nerdz_server.conf")) == true
             puts "\nUser #{username} Already Registered!"
-			return nil    
+            return nil    
         end
 
-		puts "\nCreating Key Pair"
-		make_keys(username)
-		
+        puts "\nCreating Key Pair"
+        make_keys(username)
+        
         # Get public key from pem and hash the username
-		hash_user = hash_data(username)
-		pub_key = read_pub_key(username)
+        hash_user = hash_data(username)
+        pub_key = read_pub_key(username)
 
         # Open port and send to server
-		s = TCPSocket.open(hostname,port)
-		cmd = "register|#{hash_user}|#{pub_key}"
-		s.puts cmd
+        s = TCPSocket.open(hostname,port)
+        cmd = "register|#{hash_user}|#{pub_key}"
+        s.puts cmd
     
         # Wait for response from server
-		response = s.gets.strip
-		case response 
-		when "registered" 
-			puts "\nUser #{username} Registered!"
-		when "already_registered"
-		    puts "\nUser #{username} Already Registered!"
-			return nil
-		when "failed"
-			puts "\nUser Registration Failed!"
-			return nil
-		else
-			puts "\nCorrupted Packet Received!"
-			return nil
-		end
-	rescue Exception => msg
-		puts msg if $debug
-		puts "\nGeneral Registration Failure!"
-		return nil
-	ensure
-		s.close unless s == nil
-	end
+        response = s.gets.strip
+        case response 
+        when "registered" 
+            puts "\nUser #{username} Registered!"
+        when "already_registered"
+            puts "\nUser #{username} Already Registered!"
+            return nil
+        when "failed"
+            puts "\nUser Registration Failed!"
+            return nil
+        else
+            puts "\nCorrupted Packet Received!"
+            return nil
+        end
+    rescue Exception => msg
+        puts msg if $debug
+        puts "\nGeneral Registration Failure!"
+        return nil
+    ensure
+        s.close unless s == nil
+    end
 
-	# Open config file and write data since registration was successful
-	begin
-		file = File.open(File.expand_path("#{$path}/#{username}_nerdz_server.conf"), "w")
-		file.puts(hostname) 
-		file.puts(port.to_s)
-		puts "\nServer Config File Written to #{$path}" 
-	rescue Exception => msg 
-		puts msg if $debug
-  		puts "\nError Writing Server Config File!"
-  		return 1
-	ensure
-  		file.close unless file == nil
-	end
-	return 0
+    # Open config file and write data since registration was successful
+    begin
+        file = File.open(File.expand_path("#{$path}/#{username}_nerdz_server.conf"), "w")
+        file.puts(hostname) 
+        file.puts(port.to_s)
+        puts "\nServer Config File Written to #{$path}" 
+    rescue Exception => msg 
+        puts msg if $debug
+        puts "\nError Writing Server Config File!"
+        return 1
+    ensure
+        file.close unless file == nil
+    end
+    return 0
 end
 
 # Send message to one or more users
@@ -347,9 +347,9 @@ def cmd_read_watch(mode,prv_key)
                     end
                 else
                     # Decrypt and Send messages to STDOUT or a File
-                    messages.reverse.each do |msg|
+                    messages.reverse.each do |messsage|
                         puts
-                        process_message(msg,prv_key)
+                        process_message(messsage,prv_key)
                     end
                     puts
                 end
@@ -376,7 +376,7 @@ end
 def process_message (msg,prv_key)
     # Decrypt the message or file
     message = decrypt_public(msg,prv_key)
-    fyn = message.match /^\*\*\*\* File \[(.*)\]/
+    fyn = message.match (/^\*\*\*\* File \[(.*)\]/)
 
     # Check if a message or a file
     if fyn == nil
@@ -466,7 +466,7 @@ def cmd_unregister
                 # Delete the config and key files
                 conf = File.expand_path("#{$path}/#{fusername}_nerdz_server.conf")
                 pubkeyname = File.expand_path("#{$path}/#{fusername}_public_key.pem")
-		        prvkeyname = File.expand_path("#{$path}/#{fusername}_priv_key.pem")
+                prvkeyname = File.expand_path("#{$path}/#{fusername}_priv_key.pem")
  
                 File.delete(conf) if File.exist?(conf)
                 File.delete(pubkeyname) if File.exist?(pubkeyname)
@@ -546,13 +546,13 @@ def cmd_watch
 
     # Start watching for messages
     puts "\n**** Watching for Messages - Ctrl-C to Quit ****"    
-    begin	
+    begin   
         while (true)
             cmd_read_watch("watch",prv_key)
             sleep 5
         end
     rescue Interrupt
-    	exit 0
+        exit 0
     end
 end
 
@@ -574,7 +574,7 @@ def cmd_read
 end 
 
 def cmd_help
-	puts "**** Help Screen ****"
+    puts "**** Help Screen ****"
     puts "\nnerdz register <username> <hostname> <port>"
     puts "nerdz unregister <username>"
     puts "nerdz default <username>"
@@ -598,37 +598,37 @@ require_relative './public_encrypt'
 $path = File.expand_path('~/nerdz')
 
 if ARGV[0] == nil
-	cmd_help
-	exit 1
+    cmd_help
+    exit 1
 end
 
 begin
-	command = ARGV[0].downcase 
+    command = ARGV[0].downcase 
 
-	case command
-	when "register"
-		cmd_register
-	when "send"
-		cmd_send
-	when "read"
+    case command
+    when "register"
+        cmd_register
+    when "send"
+        cmd_send
+    when "read"
         cmd_read
-	when "watch"
-		cmd_watch
-	when "help"
-		cmd_help
+    when "watch"
+        cmd_watch
+    when "help"
+        cmd_help
     when "unregister"
         cmd_unregister
     when "default"
         cmd_default
     when "sendfile"
         cmd_sendfile
-	else
-		cmd_help
-		exit 1
-	end
+    else
+        cmd_help
+        exit 1
+    end
 rescue Exception => msg 
     puts msg if $debug
-	exit 1
+    exit 1
 end
 exit 0
 
