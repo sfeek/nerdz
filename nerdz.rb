@@ -50,9 +50,13 @@ def cmd_register
             puts "\nUser #{username} Already Registered!"
             return nil    
         end
-
+	
+		# Make sure that key pair was created sucessfully
         puts "\nCreating Key Pair"
-        make_keys(username)
+        if make_keys(username) == nil) 
+			puts "Unable to complete key creation!"
+			return nil
+		end
         
         # Get public key from pem and hash the username
         hash_user = hash_data(username)
