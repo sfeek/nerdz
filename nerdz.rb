@@ -53,7 +53,7 @@ def cmd_register
 	
 		# Make sure that key pair was created sucessfully
         puts "\nCreating Key Pair"
-        if make_keys(username) == nil) 
+        if make_keys(username) == nil 
 			puts "Unable to complete key creation!"
 			return nil
 		end
