@@ -166,6 +166,7 @@ def make_keys(username)
         open prvkeyname, 'w' do |io|
             io.write key_secure
         end
+		return 0
     rescue Exception => msg
         puts msg if $debug
         puts "Key Pair Create Failed!"
