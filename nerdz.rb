@@ -50,13 +50,13 @@ def cmd_register
             puts "\nUser #{username} Already Registered!"
             return nil    
         end
-	
-		# Make sure that key pair was created sucessfully
+    
+        # Make sure that key pair was created sucessfully
         puts "\nCreating Key Pair"
         if make_keys(username) == nil 
-			puts "Unable to complete key creation!"
-			return nil
-		end
+            puts "Unable to complete key creation!"
+            return nil
+        end
         
         # Get public key from pem and hash the username
         hash_user = hash_data(username)
@@ -128,7 +128,7 @@ def cmd_send
 
     # Get the text to send from STDIN
     inp = STDIN.read
-	
+    
     # Add our message header
     data = "**** From: #{fusername} - #{Time.now.asctime} ****\n".concat(inp)
   
@@ -236,11 +236,11 @@ def send_each(tusername,fusername,data,host,port)
             pub_key = key_from_Base64(response)
 
             # Check to see if pub_key exists
-            if (pub_key_tmp = read_pub_key(tusername)) == nil
+            if (pub_key_tmp = key_from_Base64(read_pub_key(tusername))) == nil
                 puts "Creating New Local Public Key File for #{tusername}"
                 write_pub_key(tusername,pub_key)
             else
-                if (response != pub_key_tmp)
+                if (pub_key.to_s != pub_key_tmp.to_s)
                     puts "The Public Key for User #{tusername} does not match"
                     puts "the Local Copy. Please verify Public Key change with"
                     puts "#{tusername} to make sure they changed their Key."
@@ -380,7 +380,7 @@ end
 def process_message (msg,prv_key)
     # Decrypt the message or file
     message = decrypt_public(msg,prv_key)
-    fyn = message.match (/^\*\*\*\* File \[(.*)\]/)
+    fyn = message.match(/^\*\*\*\* File \[(.*)\]/)
 
     # Check if a message or a file
     if fyn == nil

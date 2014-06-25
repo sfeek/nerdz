@@ -90,6 +90,7 @@ end
 
 # Create RSA key from Base64 string
 def key_from_Base64(string)
+    return nil if string == nil
     begin
         key = OpenSSL::PKey::RSA.new Base64.strict_decode64(string)
     rescue Exception => msg
