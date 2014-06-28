@@ -106,18 +106,14 @@ end
 def read_pub_key(username)
     begin 
         pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
-        
-        file = File.open(pubkeyname, "rb")
-        key = file.read
+
+		pub_key=OpenSSL::PKey::RSA.new File.read pubkeyname
     rescue Exception => msg
         puts msg if $debug
-        puts "Local Public Key Does Not Exist!"
+        puts "Public Key Read Failed!"
         return nil
-    ensure
-        file.close unless file == nil
-    end 
-    
-    return Base64.strict_encode64(key)
+	end
+	return pub_key
 end
 
 # Read private key from pem file and return as usable key

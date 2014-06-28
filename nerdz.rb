@@ -1,6 +1,6 @@
 #!/usr/bin/ruby 
 
-$debug=false
+$debug=true
 
 
 ##################
@@ -60,7 +60,7 @@ def cmd_register
         
         # Get public key from pem and hash the username
         hash_user = hash_data(username)
-        pub_key = read_pub_key(username)
+        pub_key = Base64.strict_encode64(read_pub_key(username).to_s)
 
         # Open port and send to server
         s = TCPSocket.open(hostname,port)
@@ -126,13 +126,14 @@ def cmd_send
     # Let user know to enter a message
     puts "\nEnter Message, Ctrl-D to Send (Enter, CTRL-Z and Enter again for Windows)"
 
+	# Keep our old STDIN for later
+	$oldstdin = $stdin.dup
     # Get the text to send from STDIN
     inp = STDIN.read
     
     # Add our message header
     data = "**** From: #{fusername} - #{Time.now.asctime} ****\n".concat(inp)
-  
- 
+   
     # Open config file to read host and port for user
     begin
         file = File.open(File.expand_path("#{$path}/#{fusername}_nerdz_server.conf"), "r")
@@ -236,16 +237,19 @@ def send_each(tusername,fusername,data,host,port)
             pub_key = key_from_Base64(response)
 
             # Check to see if pub_key exists
-            if (pub_key_tmp = key_from_Base64(read_pub_key(tusername))) == nil
+            if (pub_key_tmp = read_pub_key(tusername)) == nil
                 puts "Creating New Local Public Key File for #{tusername}"
                 write_pub_key(tusername,pub_key)
             else
+				#puts pub_key.to_s
+				#puts pub_key_tmp.to_s
                 if (pub_key.to_s != pub_key_tmp.to_s)
                     puts "The Public Key for User #{tusername} does not match"
                     puts "the Local Copy. Please verify Public Key change with"
                     puts "#{tusername} to make sure they changed their Key."
-                    puts "\nUpdate Local Public Key and Continue Sending? <Y/N>"
-                    answer = $stdin.gets.strip.downcase
+                    puts "\nUpdate Local Public Key and Continue Sending? <Y/N>\n"
+      				$stdin.reopen($oldstdin)
+					answer = $stdin.gets.strip.downcase
                     if (answer == "y") or (answer == "yes")
                         puts "Updating Local Public Key File for #{tusername}"
                         write_pub_key(tusername,pub_key)
@@ -600,6 +604,7 @@ require_relative './public_encrypt'
 
 #Global variable for path
 $path = File.expand_path('~/nerdz')
+$oldstdin
 
 if ARGV[0] == nil
     cmd_help
