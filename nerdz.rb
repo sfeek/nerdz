@@ -126,8 +126,9 @@ def cmd_send
     # Let user know to enter a message
     puts "\nEnter Message, Ctrl-D to Send (Enter, CTRL-Z and Enter again for Windows)"
 
-	# Keep our old STDIN for later
-	$oldstdin = $stdin.dup
+    # Keep our old STDIN for later
+    $oldstdin = $stdin.dup
+
     # Get the text to send from STDIN
     inp = STDIN.read
     

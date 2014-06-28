@@ -107,13 +107,13 @@ def read_pub_key(username)
     begin 
         pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
 
-		pub_key=OpenSSL::PKey::RSA.new File.read pubkeyname
+	pub_key=OpenSSL::PKey::RSA.new File.read pubkeyname
     rescue Exception => msg
         puts msg if $debug
         puts "Public Key Read Failed!"
         return nil
-	end
-	return pub_key
+    end
+    return pub_key
 end
 
 # Read private key from pem file and return as usable key
