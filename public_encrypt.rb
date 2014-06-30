@@ -8,6 +8,8 @@ require 'base64'
 # Input: string to be encrypted and public key
 # Output: string containing encrypted data:key:IV in base64 encoding
 def encrypt_public(string,key)
+    return nil if string == nil
+    return nil if key == nil
     begin
         # Encrypt with 256 bit AES with CBC
         cipher = OpenSSL::Cipher::Cipher.new('aes-256-cbc')
@@ -44,6 +46,8 @@ end
 # Input Base64 encoded string data:key:IV and private key
 # Output plain text string
 def decrypt_public(string,key)
+    return nil if string == nil
+    return nil if key == nil
     begin
 
         # Split apart data, key, and IV
@@ -78,6 +82,7 @@ end
 
 # Hash data and return base64 encoded string
 def hash_data(data)
+    return nil if data == nil
     begin
         sha256 = OpenSSL::Digest::SHA256.new
         string = Base64.encode64(sha256.digest(data)).strip
@@ -102,12 +107,26 @@ def key_from_Base64(string)
     return key
 end
 
+# Create Base64 string from key
+def key_to_Base64(key)
+    return nil if key == nil
+    begin
+        string = Base64.strict_encode64(key.to_pem)
+    rescue Exception => msg
+        puts msg if $debug
+        puts "Key Decode Error"
+        return nil
+    end
+    return string
+end
+
 # Read public key from pem file and return as Base64 string
 def read_pub_key(username)
+    return nil if username == nil
     begin 
         pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
 
-	pub_key=OpenSSL::PKey::RSA.new File.read pubkeyname
+        pub_key=OpenSSL::PKey::RSA.new File.read pubkeyname
     rescue Exception => msg
         puts msg if $debug
         puts "Public Key Read Failed!"
@@ -118,6 +137,7 @@ end
 
 # Read private key from pem file and return as usable key
 def read_prv_key(username)
+    return nil if username == nil
     begin 
         prvkeyname = File.expand_path("#{$path}/#{username}_priv_key.pem")
         
@@ -132,6 +152,8 @@ end
 
 # Create key pair and store in files
 def write_pub_key(username,key)
+    return nil if username == nil
+    return nil if key == nil
     begin
         # Get the file paths
         pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
@@ -140,7 +162,7 @@ def write_pub_key(username,key)
         open pubkeyname, 'w' do |io| io.write key.public_key.to_pem end
     rescue Exception => msg
         puts msg if $debug
-        puts "Key Write Failed!"
+        puts "Public Key Write Failed!"
         return nil
     end
     return 0
@@ -148,6 +170,7 @@ end
 
 # Create key pair and store in files
 def make_keys(username)
+    return nil if username == nil
     begin
         # New key
         key = OpenSSL::PKey::RSA.new 2048
@@ -174,6 +197,8 @@ end
 
 # Encrypt short string with RSA Public Key
 def encrypt_RSA_public(string,key)
+    return nil if string == nil
+    return nil if key == nil
     begin
         encrypted_string = Base64.strict_encode64(key.public_encrypt(string))
     rescue Exception => msg
@@ -185,6 +210,8 @@ end
 
 # Decrypt short string with RSA Private Key
 def decrypt_RSA_public(string,key)
+    return nil if string == nil
+    return nil if key == nil
     begin
         decrypted_string = (key.private_decrypt(Base64.strict_decode64(string)))
     rescue Exception => msg
@@ -196,6 +223,7 @@ end
 
 # Generate a random key and return as Base64
 def generate_random_key(size)
+    return nil if size == nil
     begin
         string=Base64.strict_encode64(OpenSSL::Random.random_bytes(size))
     rescue Exception => msg

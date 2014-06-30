@@ -1,6 +1,6 @@
 #!/usr/bin/ruby 
 
-$debug=true
+$debug=false
 
 
 ##################
@@ -48,19 +48,21 @@ def cmd_register
         # Quick test to make sure that we are not already locally registered
         if File.file?(File.expand_path("#{$path}/#{username}_nerdz_server.conf")) == true
             puts "\nUser #{username} Already Registered!"
+            remove_local_user_files(username)
             return nil    
         end
     
-        # Make sure that key pair was created sucessfully
+        # Make sure that key pair was created successfully
         puts "\nCreating Key Pair"
         if make_keys(username) == nil 
-            puts "Unable to complete key creation!"
+            puts "Unable to complete Key Creation! Mostly likely passwords did not match!"
+            remove_local_user_files(username)
             return nil
         end
         
         # Get public key from pem and hash the username
         hash_user = hash_data(username)
-        pub_key = Base64.strict_encode64(read_pub_key(username).to_s)
+        pub_key = key_to_Base64(read_pub_key(username))
 
         # Open port and send to server
         s = TCPSocket.open(hostname,port)
@@ -74,9 +76,11 @@ def cmd_register
             puts "\nUser #{username} Registered!"
         when "already_registered"
             puts "\nUser #{username} Already Registered!"
+            remove_local_user_files(username)
             return nil
         when "failed"
             puts "\nUser Registration Failed!"
+            remove_local_user_files(username)
             return nil
         else
             puts "\nCorrupted Packet Received!"
@@ -130,7 +134,7 @@ def cmd_send
     $oldstdin = $stdin.dup
 
     # Get the text to send from STDIN
-    inp = STDIN.read
+    inp = $stdin.read
     
     # Add our message header
     data = "**** From: #{fusername} - #{Time.now.asctime} ****\n".concat(inp)
@@ -239,16 +243,18 @@ def send_each(tusername,fusername,data,host,port)
 
             # Check to see if pub_key exists
             if (pub_key_tmp = read_pub_key(tusername)) == nil
+                # If not, create it
                 puts "Creating New Local Public Key File for #{tusername}"
                 write_pub_key(tusername,pub_key)
             else
-				#puts pub_key.to_s
-				#puts pub_key_tmp.to_s
-                if (pub_key.to_s != pub_key_tmp.to_s)
+                # If yes, compare downloaded to local copy
+                if (key_to_Base64(pub_key) != key_to_Base64(pub_key_tmp))
                     puts "The Public Key for User #{tusername} does not match"
                     puts "the Local Copy. Please verify Public Key change with"
                     puts "#{tusername} to make sure they changed their Key."
                     puts "\nUpdate Local Public Key and Continue Sending? <Y/N>\n"
+                    
+                    #Reopen $stdin that was closed by previous CTRL-D or CTRL-Z
       				$stdin.reopen($oldstdin)
 					answer = $stdin.gets.strip.downcase
                     if (answer == "y") or (answer == "yes")
@@ -473,15 +479,10 @@ def cmd_unregister
             case response
             when "deleted"
                 # Delete the config and key files
-                conf = File.expand_path("#{$path}/#{fusername}_nerdz_server.conf")
-                pubkeyname = File.expand_path("#{$path}/#{fusername}_public_key.pem")
-                prvkeyname = File.expand_path("#{$path}/#{fusername}_priv_key.pem")
- 
-                File.delete(conf) if File.exist?(conf)
-                File.delete(pubkeyname) if File.exist?(pubkeyname)
-                File.delete(prvkeyname) if File.exist?(prvkeyname)
+                remove_local_user_files(fusername)
         
                 puts "\nUser #{fusername} Unregistered!"
+                return 0
             when "rejected"
                 puts "\nUser #{fusername} Authentication Failed!"
                 return nil
@@ -498,7 +499,6 @@ def cmd_unregister
         puts "\nGeneral Unregister Failure!"
         return nil
     end
-    return 0
 end
 
 # Get default user from file
@@ -582,6 +582,7 @@ def cmd_read
     cmd_read_watch("once",prv_key)
 end 
 
+# Show the help screen
 def cmd_help
     puts "**** Help Screen ****"
     puts "\nnerdz register <username> <hostname> <port>"
@@ -591,6 +592,18 @@ def cmd_help
     puts "nerdz send <usernames_to> <username_from>"
     puts "nerdz sendfile <filepath> <usernames_to> <username_from>"
     puts "nerdz watch <username>"
+end
+
+# Delete local user files
+def remove_local_user_files(username)
+    # Delete the config and key files
+    conf = File.expand_path("#{$path}/#{username}_nerdz_server.conf")
+    pubkeyname = File.expand_path("#{$path}/#{username}_public_key.pem")
+    prvkeyname = File.expand_path("#{$path}/#{username}_priv_key.pem")
+
+    File.delete(conf) if File.exist?(conf)
+    File.delete(pubkeyname) if File.exist?(pubkeyname)
+    File.delete(prvkeyname) if File.exist?(prvkeyname)
 end
 
 #####################
