@@ -1,6 +1,6 @@
 #!/usr/bin/ruby 
 
-$debug=true
+$debug=false
 
 
 ##################
