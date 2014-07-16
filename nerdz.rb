@@ -1,6 +1,6 @@
 #!/usr/bin/ruby 
 
-$debug=false
+$debug=true
 
 
 ##################
@@ -255,8 +255,8 @@ def send_each(tusername,fusername,data,host,port)
                     puts "\nUpdate Local Public Key and Continue Sending? <Y/N>\n"
                     
                     #Reopen $stdin that was closed by previous CTRL-D or CTRL-Z
-      				$stdin.reopen($oldstdin)
-					answer = $stdin.gets.strip.downcase
+      		          $stdin.reopen($oldstdin)
+					          answer = $stdin.gets.strip.downcase
                     if (answer == "y") or (answer == "yes")
                         puts "Updating Local Public Key File for #{tusername}"
                         write_pub_key(tusername,pub_key)
@@ -392,6 +392,7 @@ def process_message (msg,prv_key)
     # Decrypt the message or file
     message = decrypt_public(msg,prv_key)
     fyn = message.match(/^\*\*\*\* File \[(.*)\]/)
+    begin
 
     # Check if a message or a file
     if fyn == nil
@@ -399,19 +400,31 @@ def process_message (msg,prv_key)
         puts message
     else
         # A file
-        begin
-            fdata = message.split("|")
-            puts fdata[0]
-            file = File.open(fyn[1],'wb')
-            file.syswrite(Base64.strict_decode64(fdata[1]))
-        rescue Exception => msg 
-            puts msg if $debug
-            puts "\nError Writing File  #{fyn[1]}!"
-            return nil
-        ensure
-            file.close unless file == nil
+        fdata = message.split("|")
+        puts fdata[0]
+        puts "Accept File <Y/N>?"
+        answer = $stdin.gets.strip.downcase
+
+        if (answer == "y") or (answer == "yes")
+            begin
+                fdata = message.split("|")
+                puts fdata[0]
+                file = File.open(fyn[1],'wb')
+                file.syswrite(Base64.strict_decode64(fdata[1]))
+            rescue Exception => msg 
+                puts msg if $debug
+                puts "\nError Writing File  #{fyn[1]}!"
+                return nil
+            ensure
+                file.close unless file == nil
+            end
+        else
+            puts "File was Discarded!"
         end
     end
+     rescue Exception => msg 
+        puts msg if $debug
+    end    
 end
 
 # Unregister User
