@@ -128,7 +128,7 @@ def cmd_send
     fusername = ARGV[2].strip.downcase
 
     # Let user know to enter a message
-    puts "\nEnter Message, Ctrl-D to Send (Enter, CTRL-Z and Enter again for Windows)"
+    puts "\nEnter Message, Ctrl-D to Send (Enter, CTRL-Z and Enter for Windows) or Ctrl-C to Cancel Message"
 
     # Keep our old STDIN for later
     $oldstdin = $stdin.dup
@@ -407,8 +407,8 @@ def process_message (msg,prv_key)
 
         if (answer == "y") or (answer == "yes")
             begin
+                puts "File was Accepted!"
                 fdata = message.split("|")
-                puts fdata[0]
                 file = File.open(fyn[1],'wb')
                 file.syswrite(Base64.strict_decode64(fdata[1]))
             rescue Exception => msg 
