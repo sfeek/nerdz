@@ -128,7 +128,7 @@ def cmd_send
     fusername = ARGV[2].strip.downcase
 
     # Let user know to enter a message
-    puts "\nEnter Message and press Enter to send:"
+    puts "\nType Message and press Enter to Send:"
   
     inp = Readline.readline('>', true)
     
