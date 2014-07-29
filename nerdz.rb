@@ -128,13 +128,9 @@ def cmd_send
     fusername = ARGV[2].strip.downcase
 
     # Let user know to enter a message
-    puts "\nEnter Message, Ctrl-D to Send (Enter, CTRL-Z and Enter for Windows) or Ctrl-C to Cancel Message"
-
-    # Keep our old STDIN for later
-    $oldstdin = $stdin.dup
-
-    # Get the text to send from STDIN
-    inp = $stdin.read
+    puts "\nEnter Message and press Enter to send:"
+  
+    inp = Readline.readline('>', true)
     
     # Add our message header
     data = "**** From: #{fusername} - #{Time.now.asctime} ****\n".concat(inp)
@@ -627,6 +623,7 @@ require 'socket'
 require 'openssl'
 require 'base64'
 require 'fileutils'
+require 'readline'
 require_relative './public_encrypt'
 
 #Global variable for path
