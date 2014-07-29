@@ -628,7 +628,7 @@ require_relative './public_encrypt'
 
 #Global variable for path
 $path = File.expand_path('~/nerdz')
-$oldstdin
+$oldstdin = $stdin
 
 if ARGV[0] == nil
     cmd_help
