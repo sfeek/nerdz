@@ -1,6 +1,7 @@
 #!/usr/bin/ruby 
 
 $debug=false
+$port=5150
 
 
 ##################
@@ -12,22 +13,15 @@ def cmd_register
     
     # Sanitize parameters
     if ARGV[1] == nil
-        puts "\nInvalid Syntax - nerdz register <username@hostnick> <hostname> <port>"
+        puts "\nInvalid Syntax - nerdz register <username@hostname>"
         return nil
     end
-    if ARGV[2] == nil
-        puts "\nInvalid Syntax - nerdz register <username@hostnick> <hostname> <port>"
-        return nil
-    end
-    if ARGV[3] == nil
-        ARGV[3] = '5150'
-    end
+
     begin
         username = ARGV[1].strip.downcase
-        return nil if check_username(username)
-        hostnick = username.split("@")[1]
-        hostname = ARGV[2].strip
-        port = ARGV[3].to_i
+        username = check_username(username)
+        return nil if username == nil
+        hostname = username.split("@")[1]
     rescue Exception => msg
         puts msg if $debug
         puts "\nBad Command Line Parameter!"
@@ -66,7 +60,7 @@ def cmd_register
         pub_key = key_to_Base64(read_pub_key(username))
 
         # Open port and send to server
-        s = TCPSocket.open(hostname,port)
+        s = TCPSocket.open(hostname,$port)
         cmd = "register|#{hash_user}|#{pub_key}"
         s.puts cmd
     
@@ -96,19 +90,6 @@ def cmd_register
         s.close unless s == nil
     end
 
-    # Open config file and write data since registration was successful
-    begin
-        file = File.open(File.expand_path("#{$path}/#{hostnick}_nerdz_server.conf"), "w")
-        file.puts(hostname) 
-        file.puts(port.to_s)
-        puts "\nServer Config File Written to #{$path}" 
-    rescue Exception => msg 
-        puts msg if $debug
-        puts "\nError Writing Server Config File!"
-        return 1
-    ensure
-        file.close unless file == nil
-    end
     return 0
 end
 
@@ -116,7 +97,7 @@ end
 def cmd_send
     # Sanitize parameters
     if ARGV[1] == nil
-        puts "\nInvalid Syntax - nerdz send <username@hostnick_to> <username@hostnick_from>"
+        puts "\nInvalid Syntax - nerdz send <username@hostname_to> <username@hostname_from>"
         return nil
     end
 
@@ -128,10 +109,11 @@ def cmd_send
     # Get usernames
     tusers = ARGV[1].strip.downcase.split(",")
     fusername = ARGV[2].strip.downcase
-    return nil if check_username(fusername)
+    fusername = check_username(fusername)
+    return nil if fusername == nil
     
-    tusers.each do |tusername|
-        return nil if check_username(tusername)
+    tusers.each.with_index do |tusername,i|
+        tusers[i] = check_username(tusername)
     end
     
     # Let user know to enter a message
@@ -141,39 +123,17 @@ def cmd_send
     
     # Add our message header
     data = "**** From: #{fusername} - #{Time.now.asctime} ****\n".concat(inp)
+
+    # Quick test to make sure that have an account on the server we are sending to
+    if File.file?(File.expand_path("#{$path}/#{fusername}_priv_key.pem")) == false
+        puts "\nCannot Send because you do not have an Account on #{fusername}!"
+        return nil    
+    end   
    
     # Loop through each "To" user and send the data
     tusers.each do |tusername|
-    
-        hostnick = tusername.split("@")[1]
-        fname = fusername.split("@")[0]
-        
-        # Quick test to make sure that have an account on the server we are sending to
-        if File.file?(File.expand_path("#{$path}/#{fname}@#{hostnick}_priv_key.pem")) == false
-            puts "\n#{fname}@#{hostnick} Cannot Send to a Server that you do not have an Account on!"
-            return nil    
-        end  
-        
-        # Quick test to make sure that have an account on the server we are sending to
-        if File.file?(File.expand_path("#{$path}/#{fusername}_priv_key.pem")) == false
-            puts "\n#{fusername} Cannot Send to a Server that you do not have an Account on!"
-            return nil    
-        end   
-   
-        # Open config file to read host and port for user
-        begin
-            file = File.open(File.expand_path("#{$path}/#{hostnick}_nerdz_server.conf"), "r")
-            host=file.gets.strip 
-            port=file.gets.strip.to_i
-        rescue Exception => msg 
-            puts msg if $debug
-            puts "\nError Reading Server Config File #{hostnick}!"
-            return nil
-        ensure
-            file.close unless file == nil
-        end
-
-        send_each(tusername,fusername,data,host,port)
+        host = tusername.split("@")[1]
+        send_each(tusername,fusername,data,host,$port)
     end
 
     return 0
@@ -183,11 +143,11 @@ end
 def cmd_sendfile
     # Sanitize parameters
     if ARGV[1] == nil
-        puts "\nInvalid Syntax - nerdz filesend <filepath> <username@hostnick_to> <username@hostnick_from>"
+        puts "\nInvalid Syntax - nerdz filesend <filepath> <username@hostname_to> <username@hostname_from>"
         return nil
     end
     if ARGV[2] == nil
-        puts "\nInvalid Syntax - nerdz filesend <filepath> <username@hostnick_to> <username@hostnick_from>"
+        puts "\nInvalid Syntax - nerdz filesend <filepath> <username@hostname_to> <username@hostname_from>"
         return nil
     end
 
@@ -199,10 +159,11 @@ def cmd_sendfile
     # Get usernames
     tusers = ARGV[2].strip.downcase.split(",")
     fusername = ARGV[3].strip.downcase
-    return nil if check_username(fusername)
+    fusername = check_username(fusername)
+    return nil if fusername == nil
     
-    tusers.each do |tusername|
-        return nil if check_username(tusername)
+    tusers.each.with_index do |tusername,i|
+        tusers[i] = check_username(tusername)
     end
     
     # Read the file and turn into base64
@@ -221,40 +182,18 @@ def cmd_sendfile
         puts "\nError Reading File to be Sent!"
         return nil
     end
-    
+
+    # Quick test to make sure that have an account on the server we are sending to
+    if File.file?(File.expand_path("#{$path}/#{fusername}_priv_key.pem")) == false
+        puts "\nCannot Send File because you do not have an Account on #{fusername}!"
+        return nil    
+    end 
+
     # Loop through each "To" user and send the data
     puts "Sending file..."
     tusers.each do |tusername|
-         
-        hostnick = tusername.split("@")[1]
-        fname = fusername.split("@")[0]
-               
-        # Quick test to make sure that have an account on the server we are sending to
-        if File.file?(File.expand_path("#{$path}/#{fname}@#{hostnick}_priv_key.pem")) == false
-            puts "\n#{fname}@#{hostnick} Cannot Send to a Server that you do not have an Account on!"
-            return nil    
-        end  
-        
-        # Quick test to make sure that have an account on the server we are sending to
-        if File.file?(File.expand_path("#{$path}/#{fusername}_priv_key.pem")) == false
-            puts "\n#{fusername} Cannot Send to a Server that you do not have an Account on!"
-            return nil    
-        end   
-
-        # Open config file to read host and port for user
-        begin
-            file = File.open(File.expand_path("#{$path}/#{hostnick}_nerdz_server.conf"), "r")
-            host=file.gets.strip 
-            port=file.gets.strip.to_i
-        rescue Exception => msg 
-            puts msg if $debug
-            puts "\nError Reading Server Config File #{hostnick}!"
-            return nil
-        ensure
-            file.close unless file == nil
-        end
-   
-        send_each(tusername,fusername,data,host,port)
+        host = tusername.split("@")[1]
+        send_each(tusername,fusername,data,host,$port)
     end
 
     return 0
@@ -339,29 +278,17 @@ end
 def cmd_read_watch(mode,prv_key)
     #Clean up username
     fusername = ARGV[1].strip.downcase
-    return nil if check_username(fusername)
-    hostnick = fusername.split("@")[1]
+    fusername = check_username(fusername)
+    return nil if fusername == nil
+    host = fusername.split("@")[1]
     
-    # Open config file to read host and port for user
-    begin
-        file = File.open(File.expand_path("#{$path}/#{hostnick}_nerdz_server.conf"), "r")
-        host=file.gets.strip 
-        port=file.gets.strip.to_i
-    rescue Exception => msg 
-        puts msg if $debug
-        puts "\nError Reading Server Config File #{hostnick}!"
-        return nil
-    ensure
-        file.close unless file == nil
-    end
-
     # Read the mailbox
     begin
         # Hash the username
         hash_user = hash_data(fusername)
 
         # Open the socket and request challenge for mailbox of user
-        s = TCPSocket.open(host,port)
+        s = TCPSocket.open(host,$port)
         cmd = "read1|#{hash_user}"
         s.puts cmd
 
@@ -479,20 +406,14 @@ def cmd_unregister
     
     #Clean up username
     fusername = ARGV[1].strip.downcase
-    return nil if check_username(fusername)
-    hostnick = fusername.split("@")[1]
-    
-    # Open config file to read host and port for user
-    begin
-        file = File.open(File.expand_path("#{$path}/#{hostnick}_nerdz_server.conf"), "r")
-        host=file.gets.strip 
-        port=file.gets.strip.to_i
-    rescue Exception => msg 
-        puts msg if $debug
-        puts "\nError Reading Server Config File #{hostnick}!"
-        return nil
-    ensure
-        file.close unless file == nil
+    fusername = check_username(fusername)
+    return nil if fusername == nil
+    host = fusername.split("@")[1]
+
+    # Make sure it is a user that we have a key for
+    if File.file?(File.expand_path("#{$path}/#{fusername}_priv_key.pem")) == false
+    puts "\nCannot Unregister because you do not have an Account on #{fusername}!"
+    return nil    
     end
     
     # Get the users private key
@@ -507,7 +428,7 @@ def cmd_unregister
         hash_user = hash_data(fusername)
 
         # Open the socket and request challenge for mailbox of user
-        s = TCPSocket.open(host,port)
+        s = TCPSocket.open(host,$port)
         cmd = "unregister|#{hash_user}"
         s.puts cmd
 
@@ -574,10 +495,11 @@ def get_default
     end
 end
 
+# Add the default suffix if necessary
 def check_username(username)
-    return false if username.include? '@'
-    puts "Malformed Username"
-    return true
+    return username if username.include? '@'
+    newusername = username + "@" + get_default.split("@")[1]
+    return newusername
 end
 
 # Set default user and write to file
@@ -611,7 +533,14 @@ def cmd_watch
     end
     
     fusername = ARGV[1].strip.downcase
-    return nil if check_username(fusername)
+    fusername = check_username(fusername)
+    return nil if fusername == nil
+
+    # Make sure it is a user that we have a key for
+    if File.file?(File.expand_path("#{$path}/#{fusername}_priv_key.pem")) == false
+    puts "\nCannot Watch because you do not have an Account on #{fusername}!"
+    return nil    
+    end    
 
     # Get the users private key
     prv_key=read_prv_key(fusername) 
@@ -639,7 +568,14 @@ def cmd_read
     end
 
     fusername = ARGV[1].strip.downcase
-    return nil if check_username(fusername)
+    fusername = check_username(fusername)
+    return nil if fusername == nil
+
+    # Make sure it is a user that we have a key for
+    if File.file?(File.expand_path("#{$path}/#{fusername}_priv_key.pem")) == false
+    puts "\nCannot Read because you do not have an Account on #{fusername}!"
+    return nil    
+    end
 
     # Get the users private key
     prv_key=read_prv_key(fusername) 
@@ -654,14 +590,14 @@ end
 # Show the help screen
 def cmd_help
     puts "**** Help Screen ****"
-    puts "\nnerdz register <username@hostnick> <hostname> <port>"
-    puts "nerdz unregister <username@hostnick>"
-    puts "nerdz default <username@hostnick>"
-    puts "nerdz read <username@hostnick>"
-    puts "nerdz send <username@hostnick_to> <username@hostnick_from>"
-    puts "nerdz sendfile <filepath> <username@hostnick_to> <username@hostnick_from>"
-    puts "nerdz watch <username@hostnick>"
-    puts "Send and Sendfile can have multiple username@hostnick entries separated by commas"
+    puts "\nnerdz register <username@hostname>"
+    puts "nerdz unregister <username@hostname>"
+    puts "nerdz default <username@hostname>"
+    puts "nerdz read <username@hostname>"
+    puts "nerdz send <username@hostname_to> <username@hostname_from>"
+    puts "nerdz sendfile <filepath> <username@hostname_to> <username@hostname_from>"
+    puts "nerdz watch <username@hostname>"
+    puts "Send and Sendfile can have multiple username@hostname entries separated by commas"
 end
 
 # Delete local user files
