@@ -234,8 +234,9 @@ def send_each(tusername,fusername,data,host,port)
                     puts "\nUpdate Local Public Key and Continue Sending? <Y/N>\n"
                     
                     #Reopen $stdin that was closed by previous CTRL-D or CTRL-Z
-      		          $stdin.reopen($oldstdin)
-					          answer = $stdin.gets.strip.downcase
+      		        $stdin.reopen($oldstdin)
+					answer = $stdin.gets.strip.downcase
+                    
                     if (answer == "y") or (answer == "yes")
                         puts "Updating Local Public Key File for #{tusername}"
                         write_pub_key(tusername,pub_key)
