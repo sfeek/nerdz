@@ -290,7 +290,7 @@ def cmd_read_watch(mode,prv_key)
 
         # Open the socket and request challenge for mailbox of user
         s = TCPSocket.open(host,$port)
-        cmd = "read1|#{hash_user}"
+        cmd = "read|#{hash_user}"
         s.puts cmd
 
         # Interpret the results

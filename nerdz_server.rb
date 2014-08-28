@@ -336,7 +336,7 @@ begin
                     if send(client,cmd,redis) == nil
                         break
                     end
-                when "read1"
+                when "read"
                     if read(client,cmd,redis) == nil
                         break;
                     end
