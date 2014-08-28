@@ -1,9 +1,9 @@
-#!/usr/bin/ruby 
+#!/usr/bin/ruby
 
 $debug=false
 
 ##################
-#  nerdz server  #  
+#  nerdz server  #
 ##################
 
 # Reply to ping packets
@@ -32,7 +32,7 @@ def register(client,cmd,redis)
         key = "KEY-" + key
 
         # Check if already registered
-        if redis.exists(key) == true 
+        if redis.exists(key) == true
             client.puts "already_registered"
             return nil
         end
@@ -47,16 +47,16 @@ def register(client,cmd,redis)
         if redis.expire(key, "2592000") != true
             client.puts "failed"
             return nil
-        end         
+        end
 
         # Success!
         client.puts "registered"
         return 0
     rescue Exception => msg
         puts msg if $debug
-        client.puts "failed"        
+        client.puts "failed"
         return nil
-    end 
+    end
 end
 
 # Send to a client mailbox
@@ -69,19 +69,19 @@ def send(client,cmd,redis)
         end
 
         key=cmd[1]
-    
+
         # Add key tag
         keykey = "KEY-" + key
 
         # Query Redis and send the public key to back to the client
-        rdata = redis.get(keykey) 
+        rdata = redis.get(keykey)
         if rdata != nil
             client.puts rdata
         else
             client.puts "nouser"
             return nil
-        end    
-        
+        end
+
         # Wait for client to respond with data to be added to the database
         cmd=client.readline.strip.split('|')
 
@@ -101,7 +101,7 @@ def send(client,cmd,redis)
 
         key=cmd[1]
         data=cmd[2]
-    
+
         # Add key tags
         keykey = "KEY-" + key
         keymsg = "MSG-" + key
@@ -116,16 +116,16 @@ def send(client,cmd,redis)
         if redis.expire(keymsg, "2592000") != true
             client.puts "failed"
             return nil
-        end     
+        end
 
         # Success!
         client.puts "sent"
         return 0
     rescue Exception => msg
         puts msg if $debug
-        client.puts "failed"        
+        client.puts "failed"
         return nil
-    end 
+    end
 end
 
 # Read from client mailbox
@@ -138,7 +138,7 @@ def read(client,cmd,redis)
         end
 
         key=cmd[1]
-    
+
         # Add key tags
         keykey = "KEY-" + key
         keymsg = "MSG-" + key
@@ -147,32 +147,32 @@ def read(client,cmd,redis)
         if redis.expire(keykey, "2592000") != true
             client.puts "failed"
             return nil
-        end 
+        end
 
-        # Query Redis and see if mailbox is empty, if so leave quickly 
-        len = redis.llen(keymsg) 
+        # Query Redis and see if mailbox is empty, if so leave quickly
+        len = redis.llen(keymsg)
         if len == 0
             client.puts "nomessage"
             return nil
-        end 
+        end
 
-        # Query Redis and get the public key for the user 
-        rdata = redis.get(keykey) 
+        # Query Redis and get the public key for the user
+        rdata = redis.get(keykey)
         if rdata == nil
             client.puts "nouser"
             return nil
-        end    
-    
-        # Make a public key from the users key 
+        end
+
+        # Make a public key from the users key
         pub_key = key_from_Base64(rdata)
-        
+
         # Generate a random string and hash and keep for later
         string = generate_random_key(30)
         hash_string = hash_data(string)
 
         # Encrypt with RSA public key
         enc_rsa = encrypt_RSA_public(string,pub_key)
-    
+
         # Send to client for verification
         client.puts enc_rsa
 
@@ -180,28 +180,29 @@ def read(client,cmd,redis)
         response = client.gets.strip
 
         # Check response
-        if response == hash_string then 
+        if response == hash_string then
             client.puts "accepted"
         else
             client.puts "rejected"
             return nil
         end
-        
+
         # Collect the messages from mailbox
         messages = ""
-        
-        while (msg=redis.lpop(keymsg)) != nil do
-            messages.concat(msg+"|")
+
+        (0..(len-1)).each do
+            msg=redis.lpop(keymsg)
+            messages.concat(msg+"|") if msg != nil
         end
-        
+
         # Send them to the client
         client.puts messages
      rescue Exception => msg
         puts msg if $debug
-        client.puts "failed"        
+        client.puts "failed"
         return nil
-    end 
-end   
+    end
+end
 
 # Unregister a user
 def unregister(client,cmd,redis)
@@ -213,28 +214,28 @@ def unregister(client,cmd,redis)
         end
 
         key=cmd[1]
-    
+
         # Add key tag
         keykey = "KEY-" + key
         keymsg = "MSG-" + key
 
-        # Query Redis and get the public key for the user 
-        rdata = redis.get(keykey) 
+        # Query Redis and get the public key for the user
+        rdata = redis.get(keykey)
         if rdata == nil
             client.puts "nouser"
             return nil
-        end    
-    
-        # Make a public key from the users key 
+        end
+
+        # Make a public key from the users key
         pub_key = key_from_Base64(rdata)
-        
+
         # Generate a random string and hash and keep for later
         string = generate_random_key(30)
         hash_string = hash_data(string)
 
         # Encrypt with RSA public key
         enc_rsa = encrypt_RSA_public(string,pub_key)
-    
+
         # Send to client for verification
         client.puts enc_rsa
 
@@ -244,7 +245,7 @@ def unregister(client,cmd,redis)
         # Check response
         if response == hash_string then
             # Delete the public key and messages
-            redis.del(keykey) 
+            redis.del(keykey)
             redis.del(keymsg)
 
             client.puts "deleted"
@@ -254,12 +255,12 @@ def unregister(client,cmd,redis)
         end
     rescue Exception => msg
         puts msg if $debug
-        client.puts "failed"        
+        client.puts "failed"
         return nil
-    end 
-end   
-        
-    
+    end
+end
+
+
 
 #####################
 #  Main entry point #
@@ -275,7 +276,7 @@ puts "Ctrl-C to Stop Nerdz Server"
 
 # Sanitize command line parameters
 if ARGV[0]==nil
-    ARGV[0]='5150'              
+    ARGV[0]='5150'
 end
 if ARGV[1]==nil
     ARGV[1]='localhost'
@@ -308,7 +309,7 @@ end
 
 # Open port for listening
 begin
-    server = TCPServer.open(lport)  
+    server = TCPServer.open(lport)
     puts "Nerdz Server Listening on #{lport}"
 rescue Exception => msg
     puts msg if $debug
@@ -318,13 +319,13 @@ end
 
 # Begin threaded client accept
 begin
-    while(true)                      
+    while(true)
       Thread.start(server.accept) do |client|
         puts "Connection from #{client.peeraddr[2]}" if $debug
-        begin    
-            while (true) 
+        begin
+            while (true)
                 cmd=client.readline.strip.split('|')
-            
+
                 case cmd[0]
                 when "ping"
                     pong(client,cmd)
@@ -343,7 +344,7 @@ begin
                 when "unregister"
                     if unregister(client,cmd,redis) == nil
                         break;
-                    end                
+                    end
                 else
                     break
                 end
@@ -352,7 +353,7 @@ begin
         rescue Exception => msg
             puts msg if $debug
             client.close
-        end                
+        end
       end
     end
 rescue Interrupt
