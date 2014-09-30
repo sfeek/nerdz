@@ -234,8 +234,8 @@ def send_each(tusername,fusername,data,host,port)
                     puts "\nUpdate Local Public Key and Continue Sending? <Y/N>\n"
                     
                     #Reopen $stdin that was closed by previous CTRL-D or CTRL-Z
-      		        $stdin.reopen($oldstdin)
-					answer = $stdin.gets.strip.downcase
+                    $stdin.reopen($oldstdin)
+                    answer = $stdin.gets.strip.downcase
                     
                     if (answer == "y") or (answer == "yes")
                         puts "Updating Local Public Key File for #{tusername}"
@@ -413,7 +413,7 @@ def cmd_unregister
 
     # Make sure it is a user that we have a key for
     if File.file?(File.expand_path("#{$path}/#{fusername}_priv_key.pem")) == false
-    puts "\nCannot Unregister because you do not have an Account on #{fusername}!"
+        puts "\nCannot Unregister because you do not have an Account on #{fusername}!"
     return nil    
     end
     
@@ -574,7 +574,7 @@ def cmd_read
 
     # Make sure it is a user that we have a key for
     if File.file?(File.expand_path("#{$path}/#{fusername}_priv_key.pem")) == false
-    puts "\nCannot Read because you do not have an Account on #{fusername}!"
+        puts "\nCannot Read because you do not have an Account on #{fusername}!"
     return nil    
     end
 
